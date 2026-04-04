@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-pencil" content="enabled">
+<title>I am Plan</title>
+
+<!-- Google Identity Services -->
+<script src="https://accounts.google.com/gsi/client" async onload="onGISLoad()"></script>
+<!-- Google API Client -->
+<script src="https://apis.google.com/js/api.js" onload="onGAPILoad()"></script>
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ══════════════════════════════════════
+   CSS VARIABLES — THEMES
+══════════════════════════════════════ */
+:root {
+  /* Parchment (default) */
+  --bg:#faf7f2; --sf:#ffffff; --sf2:#f2ede6; --bd:#e0d8cc;
+  --tx:#2c2416; --tx2:#8a7a65; --ac:#c17f3a; --ac2:#e8a855;
+  --canvas-bg:#fffef9; --ink:#2c2416;
+  --rule:rgba(180,160,130,0.28); --grid:rgba(180,160,130,0.18);
+  --sh:0 4px 24px rgba(0,0,0,.08),0 1px 4px rgba(0,0,0,.04);
+  --sh-lg:0 12px 48px rgba(0,0,0,.12),0 4px 12px rgba(0,0,0,.06);
+  --r:16px; --r-sm:8px; --tr:.22s cubic-bezier(.4,0,.2,1);
+  --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
+  --font-d:'Playfair Display',Georgia,serif;
+  --font-b:'Crimson Pro',Georgia,serif;
+  --font-u:'DM Sans',-apple-system,sans-serif;
+  --font-m:'JetBrains Mono',monospace;
+}
+[data-theme="dark"]{
+  --bg:#14110e;--sf:#1e1a16;--sf2:#282320;--bd:#332e28;
+  --tx:#f0e8d8;--tx2:#8a7a65;--ac:#e8a855;--ac2:#c17f3a;
+  --canvas-bg:#1a1610;--ink:#f0e8d8;
+  --rule:rgba(100,80,50,.38);--grid:rgba(100,80,50,.22);
+}
+[data-theme="blueprint"]{
+  --bg:#0a1628;--sf:#0d1f3c;--sf2:#112240;--bd:#1e3a5f;
+  --tx:#cfe8ff;--tx2:#6fa3cc;--ac:#4da6ff;--ac2:#7bbcff;
+  --canvas-bg:#0d1f3c;--ink:#4da6ff;
+  --rule:rgba(77,166,255,.22);--grid:rgba(77,166,255,.12);
+}
+[data-theme="forest"]{
+  --bg:#0f1a12;--sf:#162118;--sf2:#1c2b1e;--bd:#2a3e2c;
+  --tx:#d4ebd8;--tx2:#7aaa82;--ac:#5cbf6a;--ac2:#3d9c4c;
+  --canvas-bg:#162118;--ink:#d4ebd8;
+  --rule:rgba(92,191,106,.22);--grid:rgba(92,191,106,.12);
+}
+[data-theme="rose"]{
+  --bg:#fff5f7;--sf:#ffffff;--sf2:#fdf0f2;--bd:#f0d0d8;
+  --tx:#2d1a20;--tx2:#9a6272;--ac:#d4607a;--ac2:#e87a92;
+  --canvas-bg:#fffafc;--ink:#2d1a20;
+  --rule:rgba(212,96,122,.2);--grid:rgba(212,96,122,.1);
+}
+
+/* ══════════════════════════════════════
+   BASE
+══════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;background:var(--bg);color:var(--tx);font-family:var(--font-u);overflow:hidden;-webkit-text-size-adjust:none}
+
+@keyframes fadeIn  {from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes slideUp {from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+@keyframes scaleIn {from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+@keyframes spin    {to{transform:rotate(360deg)}}
+@keyframes pulse   {0%,100%{opacity:1}50%{opacity:.45}}
+
+/* ══════════════════════════════════════
+   LOADING
+══════════════════════════════════════ */
+#loading{
+  position:fixed;inset:0;z-index:9999;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+}
+.spin-ring{width:34px;height:34px;border:3px solid var(--bd);border-top-color:var(--ac);border-radius:50%;animation:spin .8s linear infinite}
+.loading-txt{font-size:13px;color:var(--tx2)}
+
+/* ══════════════════════════════════════
+   LOGIN
+══════════════════════════════════════ */
+#login{
+  position:fixed;inset:0;z-index:9998;background:var(--bg);
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  padding:40px 24px;animation:fadeIn .5s ease;
+}
+.login-brand{text-align:center;margin-bottom:48px}
+.login-logo{
+  width:80px;height:80px;border-radius:28px;background:var(--ac);
+  display:flex;align-items:center;justify-content:center;font-size:36px;
+  margin:0 auto 18px;box-shadow:0 8px 32px color-mix(in srgb,var(--ac) 38%,transparent);
+}
+.login-h1{font-family:var(--font-d);font-size:38px;font-weight:700;letter-spacing:-.03em;color:var(--tx);margin-bottom:6px}
+.login-sub{font-size:14px;color:var(--tx2);letter-spacing:.01em}
+.login-card{
+  width:100%;max-width:360px;background:var(--sf);
+  border:1px solid var(--bd);border-radius:24px;padding:28px;
+  box-shadow:var(--sh-lg);animation:slideUp .55s .1s both ease;
+}
+.login-card-h{font-family:var(--font-d);font-size:20px;font-weight:500;margin-bottom:5px}
+.login-card-sub{font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:24px}
+.btn-goog{
+  width:100%;display:flex;align-items:center;justify-content:center;gap:11px;
+  background:var(--sf2);border:1.5px solid var(--bd);border-radius:13px;
+  padding:13px 18px;font-family:var(--font-u);font-size:14px;font-weight:500;
+  color:var(--tx);cursor:pointer;transition:all var(--tr);
+}
+.btn-goog:hover{background:var(--bg);border-color:var(--ac);transform:translateY(-1px);box-shadow:0 4px 14px color-mix(in srgb,var(--ac) 16%,transparent)}
+.btn-goog:active{transform:scale(.98)}
+.login-feats{margin-top:22px;display:flex;flex-direction:column;gap:9px}
+.login-feat{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--tx2)}
+.feat-icon{width:27px;height:27px;border-radius:8px;background:color-mix(in srgb,var(--ac) 12%,transparent);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+
+/* ══════════════════════════════════════
+   APP SHELL
+══════════════════════════════════════ */
+#app{display:none;width:100%;height:100%;flex-direction:column;overflow:hidden}
+#app.on{display:flex;animation:fadeIn .35s ease}
+
+/* HEADER */
+.hdr{
+  display:flex;align-items:center;gap:10px;
+  padding:calc(var(--safe-t) + 12px) 16px 12px;
+  background:color-mix(in srgb,var(--sf) 94%,transparent);
+  border-bottom:1px solid var(--bd);flex-shrink:0;
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  position:relative;z-index:100;
+}
+.hdr-title{font-family:var(--font-d);font-size:21px;font-weight:700;letter-spacing:-.02em;flex:1;user-select:none}
+.hdr-btn{
+  width:37px;height:37px;border-radius:10px;background:var(--sf2);
+  border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:16px;color:var(--tx2);transition:all var(--tr);flex-shrink:0;
+  position:relative;
+}
+.hdr-btn:hover{background:var(--bg);border-color:var(--ac);color:var(--tx)}
+.sync-dot{
+  position:absolute;top:-2px;right:-2px;width:8px;height:8px;
+  border-radius:50%;background:var(--ac);border:2px solid var(--sf);display:none;
+}
+.sync-dot.go{display:block;animation:spin .7s linear infinite}
+.avatar{
+  width:37px;height:37px;border-radius:50%;background:var(--ac);
+  border:2px solid var(--bd);display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:600;color:#fff;cursor:pointer;overflow:hidden;flex-shrink:0;
+}
+.avatar img{width:100%;height:100%;object-fit:cover}
+
+/* LAYOUT */
+.layout{display:flex;flex:1;overflow:hidden}
+
+/* SIDEBAR */
+.side{
+  width:272px;background:var(--sf);border-right:1px solid var(--bd);
+  display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;
+  transition:transform var(--tr);
+}
+.side-hdr{padding:14px 14px 10px;border-bottom:1px solid var(--bd);flex-shrink:0}
+.side-lbl{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--tx2);margin-bottom:9px}
+.btn-new{
+  width:100%;display:flex;align-items:center;gap:7px;
+  background:var(--ac);color:#fff;border:none;border-radius:10px;
+  padding:9px 13px;font-family:var(--font-u);font-size:13px;font-weight:500;
+  cursor:pointer;transition:all var(--tr);
+}
+.btn-new:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.btn-new:active{transform:scale(.98)}
+
+/* Note search */
+.side-search{
+  margin-top:8px;display:flex;align-items:center;gap:7px;
+  background:var(--sf2);border:1px solid var(--bd);border-radius:9px;
+  padding:7px 10px;
+}
+.side-search input{flex:1;background:transparent;border:none;outline:none;font-size:13px;color:var(--tx);font-family:var(--font-u)}
+.side-search input::placeholder{color:var(--tx2);opacity:.6}
+.side-search-ico{font-size:13px;color:var(--tx2)}
+
+.notelist{flex:1;overflow-y:auto;padding:6px 6px}
+.notelist::-webkit-scrollbar{width:3px}
+.notelist::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
+
+.ni{padding:11px 11px;border-radius:10px;cursor:pointer;transition:all var(--tr);margin-bottom:2px;border:1px solid transparent}
+.ni:hover{background:var(--sf2)}
+.ni.act{background:color-mix(in srgb,var(--ac) 10%,transparent);border-color:color-mix(in srgb,var(--ac) 22%,transparent)}
+.ni-title{font-size:13px;font-weight:500;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px}
+.ni.act .ni-title{color:var(--ac)}
+.ni-meta{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--tx2)}
+.ni-tag{display:inline-flex;align-items:center;padding:1px 6px;border-radius:20px;background:var(--sf2);border:1px solid var(--bd);font-size:10px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ni-mode{font-size:10px;opacity:.6}
+
+.side-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 12px;text-align:center;color:var(--tx2);gap:6px;font-size:12px}
+.side-empty-ico{font-size:28px;opacity:.3}
+
+/* EDITOR AREA */
+.ed-area{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+
+/* TOOLBAR */
+.toolbar{
+  display:flex;align-items:center;gap:5px;padding:8px 14px;
+  background:var(--sf);border-bottom:1px solid var(--bd);
+  flex-shrink:0;flex-wrap:wrap;min-height:52px;
+}
+.mode-tabs{display:flex;background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:2px;gap:2px}
+.mtab{
+  padding:5px 11px;border-radius:8px;font-size:12px;font-weight:500;
+  cursor:pointer;color:var(--tx2);border:none;background:transparent;font-family:var(--font-u);
+  transition:all var(--tr);
+}
+.mtab.act{background:var(--sf);color:var(--tx);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.tb-sep{width:1px;height:22px;background:var(--bd);margin:0 3px}
+.tb-grp{display:flex;align-items:center;gap:2px}
+.tbtn{
+  width:33px;height:33px;border-radius:8px;background:transparent;border:1px solid transparent;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  font-size:13px;font-weight:500;color:var(--tx2);transition:all var(--tr);font-family:var(--font-u);
+}
+.tbtn:hover{background:var(--sf2);color:var(--tx);border-color:var(--bd)}
+.tbtn.act{background:color-mix(in srgb,var(--ac) 12%,transparent);color:var(--ac);border-color:color-mix(in srgb,var(--ac) 25%,transparent)}
+.tbtn.del:hover{background:color-mix(in srgb,#e25 12%,transparent);color:#e25;border-color:color-mix(in srgb,#e25 25%,transparent)}
+.tb-spacer{flex:1}
+
+/* NOTE WRAPPER */
+.note-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
+
+/* EMPTY STATE */
+.empty-big{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:40px;text-align:center;gap:10px;
+}
+.empty-ico{font-size:56px;opacity:.18;margin-bottom:2px}
+.empty-h{font-family:var(--font-d);font-size:19px;font-weight:500;color:var(--tx2)}
+.empty-s{font-size:13px;color:var(--tx2);opacity:.6;line-height:1.6}
+
+/* TEXT MODE */
+.txt-wrap{flex:1;overflow-y:auto;padding:36px 40px;display:flex;justify-content:center}
+.txt-wrap::-webkit-scrollbar{width:4px}
+.txt-wrap::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
+.txt-paper{width:100%;max-width:700px}
+.note-title{
+  width:100%;font-family:var(--font-d);font-size:30px;font-weight:700;
+  color:var(--tx);background:transparent;border:none;outline:none;
+  letter-spacing:-.02em;line-height:1.25;resize:none;overflow:hidden;margin-bottom:3px;
+}
+.note-dateline{font-size:11px;color:var(--tx2);margin-bottom:22px;letter-spacing:.02em}
+.note-body{
+  width:100%;min-height:480px;font-family:var(--font-b);font-size:18px;
+  line-height:1.85;color:var(--tx);background:transparent;border:none;outline:none;
+  resize:none;letter-spacing:.01em;
+}
+.note-body::placeholder{color:var(--tx2);opacity:.4}
+
+/* TAGS ROW */
+.tags-row{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:16px;min-height:18px;align-items:center}
+.tag-chip{
+  display:inline-flex;align-items:center;gap:4px;padding:2px 9px;
+  border-radius:20px;background:color-mix(in srgb,var(--ac) 10%,transparent);
+  border:1px solid color-mix(in srgb,var(--ac) 22%,transparent);
+  font-size:11px;color:var(--ac);cursor:pointer;transition:all var(--tr);
+}
+.tag-chip:hover{background:color-mix(in srgb,var(--ac) 18%,transparent)}
+.tag-chip .rm{opacity:.5;margin-left:2px;font-size:10px}
+.tag-add{font-size:11px;color:var(--tx2);cursor:pointer;padding:2px 7px;border-radius:20px;border:1px dashed var(--bd);transition:all var(--tr)}
+.tag-add:hover{border-color:var(--ac);color:var(--ac)}
+
+/* ══════════════════════════════════════
+   CANVAS — APPLE PENCIL ENGINE
+══════════════════════════════════════ */
+.canvas-mode-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
+
+/* Pencil toolbar */
+.pen-toolbar{
+  display:flex;align-items:center;gap:8px;padding:7px 14px;
+  background:var(--sf);border-bottom:1px solid var(--bd);flex-shrink:0;overflow-x:auto;
+}
+.pen-toolbar::-webkit-scrollbar{display:none}
+.pen-sizes{display:flex;gap:5px;align-items:center;flex-shrink:0}
+.sz{
+  border-radius:50%;background:var(--ink);cursor:pointer;
+  transition:all var(--tr);border:2.5px solid transparent;flex-shrink:0;
+}
+.sz.act{border-color:var(--ac);box-shadow:0 0 0 2px color-mix(in srgb,var(--ac) 28%,transparent)}
+.pen-colors{display:flex;gap:5px;align-items:center;flex-shrink:0}
+.col{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;transition:all var(--tr)}
+.col.act{border-color:white;box-shadow:0 0 0 2px var(--ac);transform:scale(1.15)}
+.psep{width:1px;height:22px;background:var(--bd);margin:0 2px;flex-shrink:0}
+.eraser-ctrl{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--tx2);flex-shrink:0}
+.eraser-ctrl input[type=range]{width:68px;accent-color:var(--ac);cursor:pointer}
+
+/* Canvas container — STRICT isolation */
+.canvas-cont{
+  flex:1;position:relative;overflow:hidden;
+  /* Kill ALL browser touch gestures inside canvas area */
+  touch-action:none;
+  -webkit-user-select:none;
+  user-select:none;
+  cursor:crosshair;
+}
+#lc{position:absolute;inset:0;pointer-events:none;z-index:1}
+#dc{
+  position:absolute;inset:0;z-index:2;
+  touch-action:none;          /* CRITICAL */
+  -webkit-user-select:none;
+  cursor:crosshair;display:block;
+}
+/* Overlay — captures ALL touch, routes only stylus to canvas */
+#touch-guard{
+  position:absolute;inset:0;z-index:3;
+  touch-action:none;
+  /* Transparent but fully present to capture events */
+}
+
+.pen-hint{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  text-align:center;pointer-events:none;opacity:.3;z-index:4;
+}
+.pen-hint-ico{font-size:46px;opacity:.5;margin-bottom:10px}
+.pen-hint-txt{font-size:13px;color:var(--tx2);line-height:1.65}
+
+.tool-badge{
+  position:absolute;bottom:14px;right:14px;z-index:10;
+  display:flex;align-items:center;gap:6px;
+  background:var(--sf);border:1px solid var(--bd);border-radius:20px;
+  padding:4px 11px;font-size:11px;font-weight:500;color:var(--tx2);
+  box-shadow:var(--sh);pointer-events:none;opacity:0;transition:opacity .25s;
+}
+.tool-badge.on{opacity:1}
+.badge-dot{width:7px;height:7px;border-radius:50%;background:var(--ac)}
+
+/* ══════════════════════════════════════
+   THEME SHEET
+══════════════════════════════════════ */
+.overlay{
+  position:fixed;inset:0;z-index:500;
+  display:none;align-items:flex-end;justify-content:center;
+  padding:0 0 calc(var(--safe-b) + 16px);
+  background:rgba(0,0,0,.42);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+}
+.overlay.on{display:flex;animation:fadeIn .2s ease}
+.sheet{
+  background:var(--sf);border:1px solid var(--bd);border-radius:24px 24px 20px 20px;
+  padding:18px;width:100%;max-width:450px;
+  box-shadow:var(--sh-lg);animation:slideUp .3s cubic-bezier(.32,.72,0,1);
+}
+.sheet-handle{width:34px;height:4px;background:var(--bd);border-radius:2px;margin:0 auto 16px}
+.sheet-h{font-family:var(--font-d);font-size:18px;font-weight:700;margin-bottom:14px}
+.theme-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+.tc{border-radius:13px;padding:12px;cursor:pointer;border:2px solid transparent;transition:all var(--tr);position:relative;overflow:hidden}
+.tc.act{border-color:var(--ac)}
+.tc:hover{transform:scale(1.02)}
+.tc-prev{height:48px;border-radius:8px;margin-bottom:8px;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-evenly;padding:4px 8px}
+.tc-line{height:2px;border-radius:1px}
+.tc-name{font-size:12px;font-weight:600;margin-bottom:1px}
+.tc-desc{font-size:10px;opacity:.55}
+.tc-check{position:absolute;top:7px;right:7px;width:19px;height:19px;border-radius:50%;background:var(--ac);display:none;align-items:center;justify-content:center;font-size:10px;color:#fff}
+.tc.act .tc-check{display:flex}
+.cs-row{display:flex;gap:7px;margin-top:12px}
+.cs-btn{
+  flex:1;padding:7px;border-radius:9px;border:1.5px solid var(--bd);
+  background:var(--sf2);font-size:11px;font-weight:500;color:var(--tx2);
+  cursor:pointer;text-align:center;transition:all var(--tr);font-family:var(--font-u);
+}
+.cs-btn.act{border-color:var(--ac);color:var(--ac);background:color-mix(in srgb,var(--ac) 8%,transparent)}
+.sheet-close{
+  width:100%;margin-top:12px;padding:10px;border-radius:11px;
+  background:var(--sf2);border:1px solid var(--bd);font-size:13px;font-weight:500;
+  cursor:pointer;color:var(--tx);font-family:var(--font-u);transition:all var(--tr);
+}
+.sheet-close:hover{background:var(--bg)}
+
+/* ══════════════════════════════════════
+   USER MENU
+══════════════════════════════════════ */
+.umenu{
+  position:fixed;top:calc(var(--safe-t) + 58px);right:14px;z-index:400;
+  background:var(--sf);border:1px solid var(--bd);border-radius:15px;
+  padding:7px;min-width:210px;box-shadow:var(--sh-lg);
+  display:none;animation:scaleIn .16s ease;transform-origin:top right;
+}
+.umenu.on{display:block}
+.u-info{display:flex;align-items:center;gap:9px;padding:7px 9px 11px;border-bottom:1px solid var(--bd);margin-bottom:3px}
+.u-ava{width:34px;height:34px;border-radius:50%;background:var(--ac);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#fff;overflow:hidden;flex-shrink:0}
+.u-ava img{width:100%;height:100%;object-fit:cover}
+.u-name{font-size:12px;font-weight:600}
+.u-email{font-size:10px;color:var(--tx2)}
+.mi{display:flex;align-items:center;gap:7px;padding:7px 9px;border-radius:7px;font-size:12px;cursor:pointer;transition:all var(--tr)}
+.mi:hover{background:var(--sf2)}
+.mi.red:hover{background:color-mix(in srgb,#e25 10%,transparent);color:#e25}
+.mi-ico{font-size:14px;width:20px;text-align:center}
+
+/* ══════════════════════════════════════
+   TOAST
+══════════════════════════════════════ */
+.toast{
+  position:fixed;top:calc(var(--safe-t) + 64px);right:14px;z-index:900;
+  background:var(--sf);border:1px solid var(--bd);border-radius:12px;
+  padding:9px 13px;display:flex;align-items:center;gap:7px;
+  font-size:12px;box-shadow:var(--sh-lg);
+  transform:translateX(130%);transition:transform .32s cubic-bezier(.32,.72,0,1);
+  pointer-events:none;max-width:260px;
+}
+.toast.on{transform:translateX(0)}
+.toast-ico{font-size:15px;flex-shrink:0}
+
+/* ══════════════════════════════════════
+   SIDEBAR OVERLAY (tablet)
+══════════════════════════════════════ */
+.side-ov{position:fixed;inset:0;z-index:199;background:rgba(0,0,0,.32);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);display:none}
+.side-ov.on{display:block}
+@media(max-width:800px){
+  .side{position:fixed;left:0;top:0;bottom:0;z-index:200;transform:translateX(-100%);box-shadow:var(--sh-lg)}
+  .side.on{transform:translateX(0)}
+  .txt-wrap{padding:22px 18px}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ LOADING ══ -->
+<div id="loading">
+  <div class="spin-ring"></div>
+  <div class="loading-txt">불러오는 중...</div>
+</div>
+
+<!-- ══ LOGIN ══ -->
+<div id="login">
+  <div class="login-brand">
+    <div class="login-logo">✦</div>
+    <h1 class="login-h1">I am Plan</h1>
+    <p class="login-sub">나만의 노트 &amp; Apple Pencil 필기 공간</p>
+  </div>
+  <div class="login-card">
+    <div class="login-card-h">시작하기</div>
+    <p class="login-card-sub">Google 계정으로 로그인하면 작성한 노트가<br>Google Sheets에 자동으로 동기화됩니다.</p>
+    <button class="btn-goog" id="goog-btn" onclick="doLogin()">
+      <svg width="19" height="19" viewBox="0 0 48 48">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.36-8.16 2.36-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+      </svg>
+      Google로 로그인
+    </button>
+    <div class="login-feats">
+      <div class="login-feat"><div class="feat-icon">☁️</div>Google Sheets 실시간 동기화</div>
+      <div class="login-feat"><div class="feat-icon">✏️</div>Apple Pencil 압력·속도 감지 필기</div>
+      <div class="login-feat"><div class="feat-icon">🎨</div>5가지 테마 + 4가지 용지 스타일</div>
+      <div class="login-feat"><div class="feat-icon">🔒</div>손바닥 터치 완전 차단 (Palm Rejection)</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="app">
+
+  <div class="side-ov" id="side-ov" onclick="closeSide()"></div>
+
+  <!-- Header -->
+  <div class="hdr">
+    <button class="hdr-btn" onclick="toggleSide()">☰</button>
+    <div class="hdr-title">I am Plan</div>
+    <button class="hdr-btn" onclick="openTheme()" title="테마">🎨</button>
+    <button class="hdr-btn" id="sync-btn" onclick="doSync()" title="동기화">
+      <span id="sync-ico">⟳</span>
+      <span class="sync-dot" id="sync-dot"></span>
+    </button>
+    <div class="avatar" id="av" onclick="toggleMenu()"><span id="av-init">?</span></div>
+  </div>
+
+  <!-- User menu -->
+  <div class="umenu" id="umenu">
+    <div class="u-info">
+      <div class="u-ava" id="menu-av"><span id="menu-init">?</span></div>
+      <div><div class="u-name" id="menu-name">-</div><div class="u-email" id="menu-email">-</div></div>
+    </div>
+    <div class="mi" onclick="openTheme();closeMenu()"><span class="mi-ico">🎨</span>테마 변경</div>
+    <div class="mi" onclick="doSync();closeMenu()"><span class="mi-ico">⟳</span>지금 동기화</div>
+    <div class="mi red" onclick="doLogout()"><span class="mi-ico">↩</span>로그아웃</div>
+  </div>
+
+  <!-- Layout -->
+  <div class="layout">
+
+    <!-- Sidebar -->
+    <div class="side" id="side">
+      <div class="side-hdr">
+        <div class="side-lbl">내 노트</div>
+        <button class="btn-new" onclick="newNote()"><span>✦</span>새 노트</button>
+        <div class="side-search">
+          <span class="side-search-ico">🔍</span>
+          <input id="search-in" type="text" placeholder="검색..." oninput="filterNotes(this.value)">
+        </div>
+      </div>
+      <div class="notelist" id="notelist"></div>
+    </div>
+
+    <!-- Editor -->
+    <div class="ed-area">
+
+      <!-- Toolbar -->
+      <div class="toolbar" id="toolbar" style="display:none">
+        <div class="mode-tabs">
+          <button class="mtab act" id="tab-txt" onclick="setMode('txt')">✏️ 텍스트</button>
+          <button class="mtab" id="tab-pen" onclick="setMode('pen')">🖊️ 필기</button>
+        </div>
+        <div class="tb-sep"></div>
+
+        <!-- Text tools -->
+        <div class="tb-grp" id="txt-tools">
+          <button class="tbtn" onclick="fmt('bold')" title="굵게"><b>B</b></button>
+          <button class="tbtn" onclick="fmt('italic')" title="기울임"><i>I</i></button>
+          <button class="tbtn" onclick="fmt('underline')" title="밑줄"><u>U</u></button>
+          <div class="tb-sep"></div>
+          <button class="tbtn" onclick="addTag()" title="태그">🏷</button>
+        </div>
+
+        <!-- Canvas tools -->
+        <div class="tb-grp" id="pen-tools" style="display:none">
+          <button class="tbtn act" id="t-pen" onclick="setTool('pen')">🖊</button>
+          <button class="tbtn" id="t-er" onclick="setTool('er')">⌫</button>
+          <div class="tb-sep"></div>
+          <button class="tbtn" onclick="undo()" title="실행취소">↩</button>
+          <button class="tbtn" onclick="redo()" title="다시실행">↪</button>
+          <div class="tb-sep"></div>
+          <button class="tbtn del" onclick="clearAll()" title="전체 지우기">🗑</button>
+        </div>
+
+        <div class="tb-spacer"></div>
+        <button class="tbtn del" onclick="delNote()" title="노트 삭제">🗑</button>
+      </div>
+
+      <!-- Note content -->
+      <div class="note-wrap" id="note-wrap">
+        <!-- Empty -->
+        <div class="empty-big" id="empty-big">
+          <div class="empty-ico">✦</div>
+          <div class="empty-h">노트를 선택하거나 새로 만드세요</div>
+          <div class="empty-s">왼쪽에서 노트를 선택하거나<br>새 노트 버튼을 눌러 시작하세요</div>
+        </div>
+
+        <!-- TEXT MODE -->
+        <div class="txt-wrap" id="txt-mode" style="display:none">
+          <div class="txt-paper">
+            <textarea id="nt" class="note-title" rows="1" placeholder="제목" oninput="autoH(this);debSave()"></textarea>
+            <div class="note-dateline" id="nd"></div>
+            <div class="tags-row" id="tags-row"></div>
+            <textarea id="nb" class="note-body" placeholder="여기에 내용을 작성하세요..." oninput="debSave()"></textarea>
+          </div>
+        </div>
+
+        <!-- CANVAS MODE -->
+        <div class="canvas-mode-wrap" id="pen-mode" style="display:none">
+
+          <!-- Pencil toolbar -->
+          <div class="pen-toolbar">
+            <!-- Sizes -->
+            <div class="pen-sizes" id="pen-sizes">
+              <div class="sz act" style="width:4px;height:4px"   data-s="1.2" onclick="setSize(this)"></div>
+              <div class="sz"     style="width:7px;height:7px"   data-s="2.8" onclick="setSize(this)"></div>
+              <div class="sz"     style="width:11px;height:11px" data-s="5.5" onclick="setSize(this)"></div>
+              <div class="sz"     style="width:16px;height:16px" data-s="9"   onclick="setSize(this)"></div>
+            </div>
+            <div class="psep"></div>
+            <!-- Colors -->
+            <div class="pen-colors" id="pen-colors">
+              <div class="col act" style="background:#2c2416" data-c="#2c2416" onclick="setColor(this)"></div>
+              <div class="col"     style="background:#c17f3a" data-c="#c17f3a" onclick="setColor(this)"></div>
+              <div class="col"     style="background:#e05050" data-c="#e05050" onclick="setColor(this)"></div>
+              <div class="col"     style="background:#3a7ec1" data-c="#3a7ec1" onclick="setColor(this)"></div>
+              <div class="col"     style="background:#3aaa5a" data-c="#3aaa5a" onclick="setColor(this)"></div>
+              <div class="col"     style="background:#9b59b6" data-c="#9b59b6" onclick="setColor(this)"></div>
+              <div class="col"     style="background:#e87a92" data-c="#e87a92" onclick="setColor(this)"></div>
+            </div>
+            <div class="psep"></div>
+            <!-- Eraser size -->
+            <div class="eraser-ctrl">
+              <span>⌫</span>
+              <input type="range" min="8" max="64" value="22" id="er-sz" oninput="ERS=+this.value">
+            </div>
+          </div>
+
+          <!-- Canvas container -->
+          <div class="canvas-cont" id="cc">
+            <canvas id="lc"></canvas><!-- lines/grid background -->
+            <canvas id="dc"></canvas><!-- drawing layer -->
+            <!-- Touch guard — receives ALL touch, filters by type -->
+            <div id="touch-guard"></div>
+            <!-- Hint (hidden once drawing starts) -->
+            <div class="pen-hint" id="pen-hint">
+              <div class="pen-hint-ico">✏️</div>
+              <div class="pen-hint-txt">Apple Pencil로 필기하세요<br><small style="opacity:.55">손가락·손바닥 터치는 차단됩니다</small></div>
+            </div>
+          </div>
+
+          <div class="tool-badge" id="badge">
+            <div class="badge-dot"></div>
+            <span id="badge-t">펜</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ THEME SHEET ══ -->
+<div class="overlay" id="theme-ov" onclick="closeThemeOnBg(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-h">테마 선택</div>
+    <div class="theme-grid">
+
+      <div class="tc act" data-th="parchment" onclick="applyTheme('parchment',this)">
+        <div class="tc-check">✓</div>
+        <div class="tc-prev" style="background:#fffef9">
+          <div class="tc-line" style="background:rgba(180,160,130,.4)"></div>
+          <div class="tc-line" style="background:rgba(180,160,130,.4)"></div>
+          <div class="tc-line" style="background:rgba(180,160,130,.4)"></div>
+        </div>
+        <div class="tc-name" style="color:#2c2416">📜 파치먼트</div>
+        <div class="tc-desc" style="color:#8a7a65">따뜻한 아이보리</div>
+      </div>
+
+      <div class="tc" data-th="dark" onclick="applyTheme('dark',this)">
+        <div class="tc-check">✓</div>
+        <div class="tc-prev" style="background:#1a1610">
+          <div class="tc-line" style="background:rgba(100,80,50,.5)"></div>
+          <div class="tc-line" style="background:rgba(100,80,50,.5)"></div>
+          <div class="tc-line" style="background:rgba(100,80,50,.5)"></div>
+        </div>
+        <div class="tc-name" style="color:#f0e8d8">🌙 다크</div>
+        <div class="tc-desc" style="color:#8a7a65">심야 집중 모드</div>
+      </div>
+
+      <div class="tc" data-th="blueprint" onclick="applyTheme('blueprint',this)">
+        <div class="tc-check">✓</div>
+        <div class="tc-prev" style="background:#0d1f3c">
+          <div class="tc-line" style="background:rgba(77,166,255,.4)"></div>
+          <div class="tc-line" style="background:rgba(77,166,255,.4)"></div>
+          <div class="tc-line" style="background:rgba(77,166,255,.4)"></div>
+        </div>
+        <div class="tc-name" style="color:#cfe8ff">📐 블루프린트</div>
+        <div class="tc-desc" style="color:#6fa3cc">설계 도면 스타일</div>
+      </div>
+
+      <div class="tc" data-th="forest" onclick="applyTheme('forest',this)">
+        <div class="tc-check">✓</div>
+        <div class="tc-prev" style="background:#162118">
+          <div class="tc-line" style="background:rgba(92,191,106,.4)"></div>
+          <div class="tc-line" style="background:rgba(92,191,106,.4)"></div>
+          <div class="tc-line" style="background:rgba(92,191,106,.4)"></div>
+        </div>
+        <div class="tc-name" style="color:#d4ebd8">🌿 포레스트</div>
+        <div class="tc-desc" style="color:#7aaa82">자연 초록 테마</div>
+      </div>
+
+      <div class="tc" data-th="rose" onclick="applyTheme('rose',this)">
+        <div class="tc-check">✓</div>
+        <div class="tc-prev" style="background:#fffafc">
+          <div class="tc-line" style="background:rgba(212,96,122,.3)"></div>
+          <div class="tc-line" style="background:rgba(212,96,122,.3)"></div>
+          <div class="tc-line" style="background:rgba(212,96,122,.3)"></div>
+        </div>
+        <div class="tc-name" style="color:#2d1a20">🌸 로제</div>
+        <div class="tc-desc" style="color:#9a6272">따뜻한 핑크 로즈</div>
+      </div>
+
+    </div>
+
+    <div style="margin-top:14px">
+      <div style="font-size:11px;color:var(--tx2);margin-bottom:7px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">필기 용지 스타일</div>
+      <div class="cs-row">
+        <button class="cs-btn act" id="cs-lined" onclick="setCS('lined',this)">— 줄 노트</button>
+        <button class="cs-btn" id="cs-grid"  onclick="setCS('grid',this)">⊞ 격자</button>
+        <button class="cs-btn" id="cs-dot"   onclick="setCS('dot',this)">· 도트</button>
+        <button class="cs-btn" id="cs-plain" onclick="setCS('plain',this)">□ 빈 종이</button>
+      </div>
+    </div>
+    <button class="sheet-close" onclick="closeTheme()">닫기</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <span class="toast-ico" id="toast-ico">✓</span>
+  <span id="toast-txt"></span>
+</div>
+
+<script>
+/* ════════════════════════════════════════
+   ★  CONFIGURATION
+   Google Cloud Console에서 발급받은 Client ID 입력
+════════════════════════════════════════ */
+const CLIENT_ID      = '450809653406-5lrtndplcenn5qma6dsj34tdjaqqg578.apps.googleusercontent.com';   // ← YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com
+const SHEET_ID       = '1tNCFvNer_LANla6ItF6rF0mNfUBsVUzCGX8T0_0eEdE';
+const SHEET_NAME     = 'Notes';
+const SCOPES         = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email';
+
+/* ════════════════════════════════════════
+   STATE
+════════════════════════════════════════ */
+let gapiReady  = false;
+let gisReady   = false;
+let tokenClient= null;
+let token      = null;
+
+let user       = null;
+let notes      = [];
+let activeId   = null;
+let mode       = 'txt';           // txt | pen
+let theme      = 'parchment';
+let cs         = 'lined';         // canvas style
+
+let saveTimer  = null;
+let syncTimer  = null;
+let searchQ    = '';
+
+/* ════════════════════════════════════════
+   BOOT
+════════════════════════════════════════ */
+window.addEventListener('DOMContentLoaded', () => {
+  // Restore local data
+  try { notes = JSON.parse(localStorage.getItem('ip-notes') || '[]'); } catch(e) { notes=[]; }
+  theme = localStorage.getItem('ip-theme') || 'parchment';
+  cs    = localStorage.getItem('ip-cs')    || 'lined';
+  _applyThemeCSS(theme);
+  _updateThemeCards();
+  _updateCSBtns();
+
+  // Restore session token
+  const savedToken = localStorage.getItem('ip-token');
+  const savedUser  = localStorage.getItem('ip-user');
+  if (savedToken && savedUser) {
+    token = savedToken;
+    user  = JSON.parse(savedUser);
+    _enterApp();
+  } else {
+    _showLogin();
+  }
+});
+
+function onGAPILoad() {
+  gapi.load('client', async () => {
+    await gapi.client.init({ discoveryDocs:['https://sheets.googleapis.com/$discovery/rest?version=v4'] });
+    gapiReady = true;
+    if (token) gapi.client.setToken({ access_token: token });
+  });
+}
+
+function onGISLoad() {
+  if (!CLIENT_ID) { gisReady = true; return; }
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPES,
+    callback: _onToken,
+  });
+  gisReady = true;
+}
+
+/* ════════════════════════════════════════
+   AUTH
+════════════════════════════════════════ */
+async function doLogin() {
+  if (!CLIENT_ID) {
+    // Demo mode — no real OAuth
+    user  = { name:'데모 사용자', email:'demo@iamplan.app', pic:null };
+    token = 'demo';
+    localStorage.setItem('ip-user',  JSON.stringify(user));
+    localStorage.setItem('ip-token', token);
+    _enterApp();
+    toast('데모 모드입니다 (Client ID 미설정)', 'ℹ️');
+    return;
+  }
+  if (!gisReady) { toast('Google 인증 준비 중...', '⏳'); return; }
+  tokenClient.requestAccessToken({ prompt:'' });
+}
+
+async function _onToken(resp) {
+  if (resp.error) { toast('인증 오류: '+resp.error, '❌'); return; }
+  token = resp.access_token;
+  localStorage.setItem('ip-token', token);
+  if (gapiReady) gapi.client.setToken({ access_token: token });
+  // Fetch user info
+  try {
+    const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers:{ Authorization:'Bearer '+token }});
+    const j = await r.json();
+    user = { name:j.name, email:j.email, pic:j.picture };
+    localStorage.setItem('ip-user', JSON.stringify(user));
+    _enterApp();
+    _syncFromSheets();
+  } catch(e) { console.error(e); }
+}
+
+function doLogout() {
+  if (typeof google !== 'undefined' && token && token !== 'demo')
+    google.accounts.oauth2.revoke(token);
+  token = null; user = null;
+  localStorage.removeItem('ip-token'); localStorage.removeItem('ip-user');
+  document.getElementById('app').classList.remove('on');
+  document.getElementById('umenu').classList.remove('on');
+  _showLogin();
+}
+
+function _showLogin() {
+  document.getElementById('loading').style.display='none';
+  document.getElementById('login').style.display='flex';
+}
+
+function _enterApp() {
+  document.getElementById('loading').style.display='none';
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').classList.add('on');
+  _updateUserUI();
+  renderList();
+  if (notes.length) openNote(notes[0].id);
+  // Auto-sync every 45s
+  syncTimer = setInterval(doSync, 45000);
+}
+
+function _updateUserUI() {
+  if (!user) return;
+  const init = (user.name||user.email||'?')[0].toUpperCase();
+  ['av-init','menu-init'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=init; });
+  document.getElementById('menu-name').textContent  = user.name||'-';
+  document.getElementById('menu-email').textContent = user.email||'-';
+  if (user.pic) {
+    document.getElementById('av').innerHTML = `<img src="${user.pic}" alt="">`;
+    document.getElementById('menu-av').innerHTML = `<img src="${user.pic}" alt="">`;
+  }
+}
+
+/* ════════════════════════════════════════
+   GOOGLE SHEETS SYNC
+════════════════════════════════════════ */
+async function doSync() {
+  if (!token || token==='demo') { toast('데모 모드에서는 동기화 불가', 'ℹ️'); return; }
+  if (!gapiReady) { toast('API 로딩 중...','⏳'); return; }
+  _startSync();
+  try {
+    saveNow();
+    await _syncToSheets();
+    toast('동기화 완료', '✓');
+  } catch(e) {
+    console.error(e);
+    toast('동기화 실패: ' + (e.result?.error?.message || e.message || '오류'), '❌');
+    // If 401, try re-auth
+    if (e.status === 401 && gisReady && tokenClient) tokenClient.requestAccessToken({ prompt:'' });
+  } finally { _stopSync(); }
+}
+
+async function _ensureSheet() {
+  const sp = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+  const exists = (sp.result.sheets||[]).some(s => s.properties.title === SHEET_NAME);
+  if (!exists) {
+    await gapi.client.sheets.spreadsheets.batchUpdate({
+      spreadsheetId: SHEET_ID,
+      resource:{ requests:[{ addSheet:{ properties:{ title: SHEET_NAME } } }] }
+    });
+    await gapi.client.sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET_ID, range: SHEET_NAME+'!A1:H1',
+      valueInputOption:'RAW',
+      resource:{ values:[['ID','Title','Body','Tags','CanvasData','Mode','CreatedAt','UpdatedAt']] }
+    });
+  }
+}
+
+async function _syncToSheets() {
+  await _ensureSheet();
+  const rows = [['ID','Title','Body','Tags','CanvasData','Mode','CreatedAt','UpdatedAt']];
+  notes.forEach(n => rows.push([
+    n.id, n.title||'', n.body||'',
+    (n.tags||[]).join(','), n.canvas||'', n.lastMode||'txt',
+    n.ca||'', n.ua||new Date().toISOString()
+  ]));
+  await gapi.client.sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID, range: SHEET_NAME+'!A1',
+    valueInputOption:'RAW', resource:{ values: rows }
+  });
+}
+
+async function _syncFromSheets() {
+  if (!token || token==='demo' || !gapiReady) return;
+  try {
+    await _ensureSheet();
+    const resp = await gapi.client.sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID, range: SHEET_NAME+'!A2:H'
+    });
+    const rows = (resp.result.values||[]).filter(r=>r[0]);
+    if (!rows.length) return;
+    const remote = rows.map(r=>({
+      id:r[0], title:r[1]||'', body:r[2]||'',
+      tags:r[3]?r[3].split(',').filter(Boolean):[],
+      canvas:r[4]||'', lastMode:r[5]||'txt',
+      ca:r[6]||new Date().toISOString(),
+      ua:r[7]||new Date().toISOString()
+    }));
+    // Merge by timestamp
+    const lm={}, rm={};
+    notes.forEach(n=>lm[n.id]=n);
+    remote.forEach(n=>rm[n.id]=n);
+    const ids = new Set([...Object.keys(lm),...Object.keys(rm)]);
+    const merged=[];
+    ids.forEach(id=>{
+      const l=lm[id],r=rm[id];
+      if(!l) merged.push(r);
+      else if(!r) merged.push(l);
+      else merged.push(new Date(l.ua)>=new Date(r.ua)?l:r);
+    });
+    merged.sort((a,b)=>new Date(b.ua)-new Date(a.ua));
+    notes = merged;
+    _saveLocal();
+    renderList();
+    toast('동기화 완료', '✓');
+  } catch(e) { console.error('syncFrom',e); }
+}
+
+function _startSync() {
+  document.getElementById('sync-dot').classList.add('go');
+  document.getElementById('sync-ico').style.animation='spin .7s linear infinite';
+}
+function _stopSync() {
+  document.getElementById('sync-dot').classList.remove('go');
+  document.getElementById('sync-ico').style.animation='';
+}
+
+/* ════════════════════════════════════════
+   NOTES CRUD
+════════════════════════════════════════ */
+function newNote() {
+  const now = new Date().toISOString();
+  const id = 'n'+Date.now();
+  notes.unshift({ id, title:'', body:'', tags:[], canvas:'', lastMode:'txt', ca:now, ua:now });
+  _saveLocal(); renderList(); openNote(id); closeSide();
+  setTimeout(()=>document.getElementById('nt').focus(),80);
+}
+
+function openNote(id) {
+  activeId = id;
+  const n = notes.find(x=>x.id===id);
+  if (!n) return;
+  document.getElementById('empty-big').style.display = 'none';
+  document.getElementById('toolbar').style.display   = 'flex';
+  document.getElementById('nt').value = n.title||'';
+  document.getElementById('nb').value = n.body||'';
+  autoH(document.getElementById('nt'));
+  document.getElementById('nd').textContent = _fmt(n.ca);
+  _renderTags(n.tags||[]);
+  renderList();
+  setMode(n.lastMode||'txt', true);
+}
+
+function delNote() {
+  if (!activeId) return;
+  if (!confirm('이 노트를 삭제할까요?')) return;
+  notes = notes.filter(n=>n.id!==activeId);
+  activeId = null; _saveLocal(); renderList();
+  document.getElementById('empty-big').style.display='flex';
+  document.getElementById('txt-mode').style.display='none';
+  document.getElementById('pen-mode').style.display='none';
+  document.getElementById('toolbar').style.display='none';
+  toast('삭제됨','🗑');
+}
+
+function saveNow() {
+  if (!activeId) return;
+  const idx = notes.findIndex(n=>n.id===activeId); if(idx<0)return;
+  notes[idx].title    = document.getElementById('nt').value;
+  notes[idx].body     = document.getElementById('nb').value;
+  notes[idx].canvas   = _getCanvas();
+  notes[idx].ua       = new Date().toISOString();
+  notes[idx].lastMode = mode;
+  _saveLocal(); renderList();
+}
+
+function debSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveNow, 700);
+}
+
+function _saveLocal() { localStorage.setItem('ip-notes', JSON.stringify(notes)); }
+
+function renderList(q) {
+  q = q ?? searchQ;
+  const el = document.getElementById('notelist');
+  const list = q ? notes.filter(n=>(n.title+n.body).toLowerCase().includes(q.toLowerCase())) : notes;
+  if (!list.length) {
+    el.innerHTML=`<div class="side-empty"><div class="side-empty-ico">📒</div>${q?'검색 결과 없음':'노트가 없습니다'}</div>`;
+    return;
+  }
+  el.innerHTML = list.map(n=>`
+    <div class="ni${n.id===activeId?' act':''}" onclick="openNote('${n.id}');closeSide()">
+      <div class="ni-title">${n.title||'(제목 없음)'}</div>
+      <div class="ni-meta">
+        <span>${_ago(n.ua)}</span>
+        ${n.tags&&n.tags[0]?`<span class="ni-tag">${n.tags[0]}</span>`:''}
+        <span class="ni-mode">${n.lastMode==='pen'?'🖊':'✏️'}</span>
+      </div>
+    </div>`).join('');
+}
+
+function filterNotes(q) { searchQ=q; renderList(q); }
+
+/* ── Tags ── */
+function _renderTags(tags) {
+  const row = document.getElementById('tags-row');
+  row.innerHTML = tags.map((t,i)=>
+    `<span class="tag-chip" onclick="removeTag(${i})">🏷 ${t} <span class="rm">✕</span></span>`
+  ).join('') + `<span class="tag-add" onclick="addTag()">+ 태그 추가</span>`;
+}
+function addTag() {
+  const t = prompt('태그 입력:'); if(!t||!activeId) return;
+  const idx=notes.findIndex(n=>n.id===activeId); if(idx<0)return;
+  notes[idx].tags=notes[idx].tags||[];
+  if(!notes[idx].tags.includes(t)) notes[idx].tags.push(t);
+  _saveLocal(); renderList(); _renderTags(notes[idx].tags);
+}
+function removeTag(i) {
+  if(!activeId)return;
+  const idx=notes.findIndex(n=>n.id===activeId); if(idx<0)return;
+  notes[idx].tags.splice(i,1);
+  _saveLocal(); renderList(); _renderTags(notes[idx].tags);
+}
+
+/* ── Mode ── */
+function setMode(m, silent) {
+  mode = m;
+  document.getElementById('tab-txt').classList.toggle('act', m==='txt');
+  document.getElementById('tab-pen').classList.toggle('act', m==='pen');
+  document.getElementById('txt-tools').style.display = m==='txt'?'flex':'none';
+  document.getElementById('pen-tools').style.display = m==='pen'?'flex':'none';
+  document.getElementById('txt-mode').style.display  = m==='txt'?'flex':'none';
+  document.getElementById('pen-mode').style.display  = m==='pen'?'flex':'none';
+  if (m==='pen') {
+    requestAnimationFrame(()=>{
+      _initCanvas();
+      const n=notes.find(x=>x.id===activeId);
+      if(n?.canvas) _loadCanvas(n.canvas); else _clearDraw();
+      drawBG();
+    });
+  }
+  if (!silent) debSave();
+}
+
+function fmt(cmd) { document.execCommand(cmd); }
+
+/* ════════════════════════════════════════
+   ★  APPLE PENCIL ENGINE — optimized
+════════════════════════════════════════ */
+let dc, ctx, lc, lctx;
+let drawing  = false;
+let tool     = 'pen';   // pen | er
+let penCol   = '#2c2416';
+let penSz    = 1.2;
+let ERS      = 22;
+
+// Stroke state
+let pts      = [];      // smooth point buffer
+let lastPt   = null;
+let vel      = 0;       // velocity for ink flow
+
+// Undo/redo
+let hist     = [];
+let redoSt   = [];
+
+function _initCanvas() {
+  dc   = document.getElementById('dc');
+  ctx  = dc.getContext('2d', { desynchronized:true, willReadFrequently:true, alpha:true });
+  lc   = document.getElementById('lc');
+  lctx = lc.getContext('2d');
+
+  const cont = document.getElementById('cc');
+  const dpr  = window.devicePixelRatio||1;
+  const W    = cont.offsetWidth;
+  const H    = cont.offsetHeight;
+
+  // Only resize if needed
+  if (dc.width !== Math.round(W*dpr)) {
+    let saved=null;
+    if(dc.width>0) try{saved=ctx.getImageData(0,0,dc.width,dc.height);}catch(e){}
+    [dc,lc].forEach(c=>{
+      c.width=Math.round(W*dpr); c.height=Math.round(H*dpr);
+      c.style.width=W+'px'; c.style.height=H+'px';
+    });
+    ctx.scale(dpr,dpr); lctx.scale(dpr,dpr);
+    if(saved) ctx.putImageData(saved,0,0);
+  }
+
+  // Attach events ONCE via guard
+  const guard = document.getElementById('touch-guard');
+  guard.style.cssText='position:absolute;inset:0;z-index:3;touch-action:none';
+  guard.onpointermove  = null;
+  guard.onpointerdown  = null;
+  guard.onpointerup    = null;
+
+  guard.addEventListener('pointerdown',  _pDown,  {passive:false});
+  guard.addEventListener('pointermove',  _pMove,  {passive:false});
+  guard.addEventListener('pointerup',    _pUp,    {passive:false});
+  guard.addEventListener('pointercancel',_pUp,    {passive:false});
+  guard.addEventListener('pointerleave', _pUp,    {passive:false});
+  guard.addEventListener('contextmenu', e=>e.preventDefault());
+
+  // Set ctx defaults for smooth rendering
+  ctx.lineCap   = 'round';
+  ctx.lineJoin  = 'round';
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+}
+
+window.addEventListener('resize', ()=>{ if(mode==='pen') { _initCanvas(); drawBG(); } });
+
+/* ── Event handlers ── */
+function _pDown(e) {
+  e.preventDefault(); e.stopPropagation();
+
+  // ★ PALM REJECTION — only Apple Pencil (pointerType==='pen')
+  if (e.pointerType !== 'pen') return;
+
+  e.target.setPointerCapture(e.pointerId);
+  drawing = true; pts = []; vel = 0;
+  const p = _pt(e); lastPt = p;
+
+  // Hide hint once drawing starts
+  document.getElementById('pen-hint').style.display = 'none';
+
+  // Snapshot for undo
+  _pushHist();
+
+  _showBadge(tool==='pen'?'펜':'지우개');
+}
+
+function _pMove(e) {
+  e.preventDefault(); e.stopPropagation();
+  if (!drawing || e.pointerType !== 'pen') return;
+
+  // getCoalescedEvents — all sub-frame stylus points (key for smooth lines)
+  const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+  for (const ev of evs) {
+    const p = _pt(ev);
+    const pr= Math.max(0.08, Math.min(1, ev.pressure||0.5));
+    if (tool==='pen') _drawStroke(p, pr);
+    else              _erase(p);
+    lastPt = p;
+  }
+}
+
+function _pUp(e) {
+  if (!drawing) return;
+  drawing = false; pts = []; lastPt = null;
+  if (e.pointerType==='pen') { _hideBadge(); debSave(); }
+}
+
+function _pt(e) {
+  const r = dc.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+/* ── Core stroke renderer — Catmull-Rom + pressure ── */
+function _drawStroke(p, pressure) {
+  if (!lastPt) return;
+
+  pts.push(p);
+  if (pts.length > 5) pts.shift();
+
+  const dx = p.x-lastPt.x, dy = p.y-lastPt.y;
+  const d  = Math.sqrt(dx*dx+dy*dy);
+  vel = vel*0.75 + d*0.25;
+
+  // Pressure-sensitive width (range: 0.3× – 2× of base size)
+  const pw = penSz * (0.3 + pressure * 1.7);
+
+  // Speed-based opacity (fast = slightly lighter = natural ink flow)
+  const alpha = Math.max(0.55, 1 - vel * 0.014);
+
+  ctx.save();
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = penCol;
+  ctx.lineWidth   = pw;
+  ctx.lineCap     = 'round';
+  ctx.lineJoin    = 'round';
+
+  if (pts.length >= 3) {
+    // Catmull-Rom midpoint spline for silky curves
+    const n  = pts.length;
+    const p0 = pts[n-3];
+    const p1 = pts[n-2];
+    const p2 = pts[n-1];
+    const mx1 = (p0.x+p1.x)/2, my1=(p0.y+p1.y)/2;
+    const mx2 = (p1.x+p2.x)/2, my2=(p1.y+p2.y)/2;
+    ctx.beginPath();
+    ctx.moveTo(mx1, my1);
+    ctx.quadraticCurveTo(p1.x, p1.y, mx2, my2);
+    ctx.stroke();
+  } else {
+    ctx.beginPath();
+    ctx.moveTo(lastPt.x, lastPt.y);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/* ── Eraser ── */
+function _erase(p) {
+  ctx.save();
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, ERS/2, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+}
+
+/* ── Tool & pen settings ── */
+function setTool(t) {
+  tool=t;
+  document.getElementById('t-pen').classList.toggle('act', t==='pen');
+  document.getElementById('t-er').classList.toggle('act',  t==='er');
+  if(dc) dc.style.cursor = t==='er'?'cell':'crosshair';
+}
+function setSize(el) {
+  document.querySelectorAll('.sz').forEach(d=>d.classList.remove('act'));
+  el.classList.add('act'); penSz=parseFloat(el.dataset.s);
+  setTool('pen');
+}
+function setColor(el) {
+  document.querySelectorAll('.col').forEach(d=>d.classList.remove('act'));
+  el.classList.add('act'); penCol=el.dataset.c;
+  setTool('pen');
+}
+
+/* ── Undo / redo ── */
+function _pushHist() {
+  if(!dc)return;
+  try{hist.push(ctx.getImageData(0,0,dc.width,dc.height));}catch(e){}
+  if(hist.length>40) hist.shift();
+  redoSt=[];
+}
+function undo() {
+  if(!hist.length)return;
+  try{redoSt.push(ctx.getImageData(0,0,dc.width,dc.height));ctx.putImageData(hist.pop(),0,0);}catch(e){}
+  debSave();
+}
+function redo() {
+  if(!redoSt.length)return;
+  try{hist.push(ctx.getImageData(0,0,dc.width,dc.height));ctx.putImageData(redoSt.pop(),0,0);}catch(e){}
+  debSave();
+}
+function clearAll() {
+  if(!dc)return; _pushHist();
+  ctx.clearRect(0,0,dc.width,dc.height);
+  document.getElementById('pen-hint').style.display='block';
+  debSave();
+}
+function _clearDraw() { if(dc) ctx.clearRect(0,0,dc.width,dc.height); }
+
+/* ── Canvas data ── */
+function _getCanvas() {
+  if(!dc||dc.width===0) return '';
+  try{ return dc.toDataURL('image/webp',0.85); }catch(e){return '';}
+}
+function _loadCanvas(url) {
+  if(!dc||!url)return;
+  const img=new Image();
+  img.onload=()=>{
+    const dpr=window.devicePixelRatio||1;
+    ctx.clearRect(0,0,dc.width,dc.height);
+    ctx.drawImage(img,0,0,dc.width/dpr,dc.height/dpr);
+    document.getElementById('pen-hint').style.display='none';
+  };
+  img.src=url;
+}
+
+/* ── Background lines / grid ── */
+function drawBG() {
+  if(!lc||!lctx)return;
+  const dpr=window.devicePixelRatio||1;
+  const W=lc.width/dpr, H=lc.height/dpr;
+  lctx.clearRect(0,0,W,H);
+  const st=getComputedStyle(document.documentElement);
+  const rule=st.getPropertyValue('--rule').trim()||'rgba(180,160,130,.28)';
+  const grid=st.getPropertyValue('--grid').trim()||'rgba(180,160,130,.18)';
+
+  if(cs==='lined'){
+    lctx.strokeStyle=rule; lctx.lineWidth=0.7;
+    for(let y=52;y<H;y+=34){ lctx.beginPath();lctx.moveTo(0,y);lctx.lineTo(W,y);lctx.stroke(); }
+    lctx.strokeStyle='rgba(200,90,90,.16)'; lctx.lineWidth=1;
+    lctx.beginPath();lctx.moveTo(68,0);lctx.lineTo(68,H);lctx.stroke();
+  } else if(cs==='grid'){
+    lctx.strokeStyle=grid; lctx.lineWidth=0.6;
+    const sp=26;
+    for(let x=0;x<W;x+=sp){lctx.beginPath();lctx.moveTo(x,0);lctx.lineTo(x,H);lctx.stroke();}
+    for(let y=0;y<H;y+=sp){lctx.beginPath();lctx.moveTo(0,y);lctx.lineTo(W,y);lctx.stroke();}
+  } else if(cs==='dot'){
+    lctx.fillStyle=rule;
+    const sp=26;
+    for(let x=sp;x<W;x+=sp) for(let y=sp;y<H;y+=sp){lctx.beginPath();lctx.arc(x,y,1.1,0,Math.PI*2);lctx.fill();}
+  }
+  // plain = blank
+}
+
+/* ── Badge ── */
+let bTimer;
+function _showBadge(t){ const b=document.getElementById('badge');document.getElementById('badge-t').textContent=t;b.classList.add('on');clearTimeout(bTimer);bTimer=setTimeout(()=>b.classList.remove('on'),1400); }
+function _hideBadge(){ clearTimeout(bTimer);document.getElementById('badge').classList.remove('on'); }
+
+/* ════════════════════════════════════════
+   THEME
+════════════════════════════════════════ */
+const THEME_ATTR = { parchment:null, dark:'dark', blueprint:'blueprint', forest:'forest', rose:'rose' };
+const INK_DEFAULTS = { parchment:'#2c2416', dark:'#f0e8d8', blueprint:'#4da6ff', forest:'#d4ebd8', rose:'#2d1a20' };
+
+function applyTheme(name, el) {
+  theme=name; _applyThemeCSS(name); _updateThemeCards(el);
+  localStorage.setItem('ip-theme',name);
+  // Update default ink color
+  const dc0=document.querySelector('.col');
+  if(dc0){ const c=INK_DEFAULTS[name]||'#2c2416'; dc0.style.background=c; dc0.dataset.c=c; penCol=c; }
+  document.querySelectorAll('.sz').forEach(d=>{ d.style.background='var(--ink)'; });
+  if(mode==='pen') drawBG();
+}
+function _applyThemeCSS(name) {
+  const a=THEME_ATTR[name];
+  if(a) document.documentElement.setAttribute('data-theme',a);
+  else  document.documentElement.removeAttribute('data-theme');
+}
+function _updateThemeCards(active) {
+  document.querySelectorAll('.tc').forEach(c=>{
+    c.classList.toggle('act', active ? c===active : c.dataset.th===theme);
+  });
+}
+function setCS(style, btn) {
+  cs=style; _updateCSBtns(btn); localStorage.setItem('ip-cs',style);
+  if(mode==='pen') drawBG();
+}
+function _updateCSBtns(active) {
+  document.querySelectorAll('.cs-btn').forEach(b=>b.classList.toggle('act', active ? b===active : b.id==='cs-'+cs));
+}
+
+function openTheme()  { document.getElementById('theme-ov').classList.add('on'); }
+function closeTheme() { document.getElementById('theme-ov').classList.remove('on'); }
+function closeThemeOnBg(e){ if(e.target===document.getElementById('theme-ov')) closeTheme(); }
+
+/* ════════════════════════════════════════
+   SIDEBAR
+════════════════════════════════════════ */
+function toggleSide(){ document.getElementById('side').classList.toggle('on'); document.getElementById('side-ov').classList.toggle('on'); }
+function closeSide() { document.getElementById('side').classList.remove('on'); document.getElementById('side-ov').classList.remove('on'); }
+
+/* ════════════════════════════════════════
+   USER MENU
+════════════════════════════════════════ */
+function toggleMenu(){ document.getElementById('umenu').classList.toggle('on'); }
+function closeMenu() { document.getElementById('umenu').classList.remove('on'); }
+document.addEventListener('click',e=>{
+  const m=document.getElementById('umenu'),av=document.getElementById('av');
+  if(m.classList.contains('on')&&!m.contains(e.target)&&!av.contains(e.target)) closeMenu();
+});
+
+/* ════════════════════════════════════════
+   TOAST
+════════════════════════════════════════ */
+let tTimer;
+function toast(txt,ico='✓'){
+  document.getElementById('toast-ico').textContent=ico;
+  document.getElementById('toast-txt').textContent=txt;
+  const t=document.getElementById('toast');
+  t.classList.add('on');
+  clearTimeout(tTimer);
+  tTimer=setTimeout(()=>t.classList.remove('on'),2800);
+}
+
+/* ════════════════════════════════════════
+   UTILS
+════════════════════════════════════════ */
+function autoH(el){ el.style.height='auto'; el.style.height=el.scrollHeight+'px'; }
+function _fmt(iso){ try{return new Date(iso).toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'long'});}catch(e){return '';} }
+function _ago(iso){
+  const d=Date.now()-new Date(iso).getTime();
+  if(d<60000)  return '방금 전';
+  if(d<3600000)return Math.floor(d/60000)+'분 전';
+  if(d<86400000)return Math.floor(d/3600000)+'시간 전';
+  return Math.floor(d/86400000)+'일 전';
+}
+
+/* ── Keyboard shortcuts ── */
+document.addEventListener('keydown', e=>{
+  const ctrl = e.metaKey||e.ctrlKey;
+  if(ctrl&&e.key==='s'){  e.preventDefault(); saveNow(); doSync(); }
+  if(ctrl&&e.key==='n'){  e.preventDefault(); newNote(); }
+  if(ctrl&&e.key==='z'&&mode==='pen'){ e.preventDefault(); undo(); }
+  if(ctrl&&e.shiftKey&&e.key==='z'&&mode==='pen'){ e.preventDefault(); redo(); }
+  if(e.key==='Escape'){ closeTheme(); closeMenu(); closeSide(); }
+});
+
+/* ── Prevent page scroll from Pencil in canvas area ── */
+document.addEventListener('touchmove', e=>{
+  if(e.target.id==='touch-guard'||e.target.closest?.('#cc')) e.preventDefault();
+},{passive:false});
+
+/* Restore theme & canvas style on page load */
+window.addEventListener('load', ()=>{
+  _applyThemeCSS(theme); _updateThemeCards(); _updateCSBtns();
+});
+</script>
+</body>
+</html>
