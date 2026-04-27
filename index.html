@@ -7,7 +7,14 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-pencil" content="enabled">
 <title>I am Plan</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%23c17f3a'/%3E%3Cpath d='M32 10l5.9 16.1L54 32l-16.1 5.9L32 54l-5.9-16.1L10 32l16.1-5.9z' fill='white'/%3E%3C/svg%3E">
 
+<script>
+window.__pendingGISLoad = false;
+window.__pendingGAPILoad = false;
+window.onGISLoad = () => { window.__pendingGISLoad = true; };
+window.onGAPILoad = () => { window.__pendingGAPILoad = true; };
+</script>
 <!-- Google Identity Services -->
 <script src="https://accounts.google.com/gsi/client" async onload="onGISLoad()"></script>
 <!-- Google API Client -->
@@ -72,6 +79,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--tx);font-famil
 @keyframes scaleIn {from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
 @keyframes spin    {to{transform:rotate(360deg)}}
 @keyframes pulse   {0%,100%{opacity:1}50%{opacity:.45}}
+@keyframes routePulse{0%,100%{filter:brightness(1);opacity:.95}50%{filter:brightness(1.18);opacity:.74}}
 
 /* ══════════════════════════════════════
    LOADING
@@ -208,9 +216,11 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--tx);font-famil
   background:var(--sf);border-bottom:1px solid var(--bd);
   flex-shrink:0;flex-wrap:wrap;min-height:52px;
 }
-.mode-tabs{display:flex;background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:2px;gap:2px}
+.mode-tabs{display:flex;background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:2px;gap:2px;max-width:100%;overflow-x:auto}
+.mode-tabs::-webkit-scrollbar{display:none}
 .mtab{
   padding:5px 11px;border-radius:8px;font-size:12px;font-weight:500;
+  white-space:nowrap;
   cursor:pointer;color:var(--tx2);border:none;background:transparent;font-family:var(--font-u);
   transition:all var(--tr);
 }
@@ -335,6 +345,45 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--tx);font-famil
 .badge-dot{width:7px;height:7px;border-radius:50%;background:var(--ac)}
 
 /* ══════════════════════════════════════
+   AR NAVIGATION
+══════════════════════════════════════ */
+.ar-mode-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#050505;position:relative}
+.ar-stage{flex:1;position:relative;overflow:hidden;background:radial-gradient(circle at 50% 20%,#182238,#050505 60%)}
+.ar-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#060606}
+.ar-video:not(.on){opacity:.15}
+.ar-sim{
+  position:absolute;inset:0;opacity:.42;transition:opacity .25s;pointer-events:none;
+  background:
+    linear-gradient(90deg,rgba(84,214,255,.12) 1px,transparent 1px),
+    linear-gradient(0deg,rgba(84,214,255,.1) 1px,transparent 1px),
+    radial-gradient(circle at 50% 46%,rgba(38,176,255,.34),transparent 34%),
+    linear-gradient(160deg,#07111d,#04070c 58%,#07111d);
+  background-size:44px 44px,44px 44px,100% 100%,100% 100%;
+}
+.ar-sim.on{opacity:1}
+.ar-sim::before,.ar-sim::after{content:"";position:absolute;left:50%;top:50%;border:1px solid rgba(84,214,255,.28);border-radius:50%;transform:translate(-50%,-50%)}
+.ar-sim::before{width:min(72vw,520px);height:min(72vw,520px)}
+.ar-sim::after{width:min(42vw,300px);height:min(42vw,300px)}
+.ar-gradient{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.58),transparent 30%,transparent 62%,rgba(0,0,0,.74));z-index:1;pointer-events:none}
+.ar-hud{position:absolute;inset:0;z-index:2;color:#fff;pointer-events:none;font-family:var(--font-u)}
+.ar-top{position:absolute;top:16px;left:16px;right:16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.ar-pill{display:flex;align-items:center;gap:7px;padding:8px 12px;border-radius:999px;background:rgba(0,0,0,.42);border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);font-size:12px;font-weight:600}
+.ar-live-dot{width:8px;height:8px;border-radius:50%;background:#f55;box-shadow:0 0 16px #f55;animation:pulse 1.2s infinite}
+.ar-compass{font-family:var(--font-m);letter-spacing:.08em;color:#dff8ff}
+.ar-route{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+.ar-arrow{width:min(34vw,170px);height:min(34vw,170px);border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,rgba(46,202,255,.9),rgba(45,120,255,.72));box-shadow:0 0 44px rgba(46,202,255,.45),inset 0 0 24px rgba(255,255,255,.18);font-size:min(18vw,86px);animation:routePulse 1.6s infinite;transition:transform .35s ease}
+.ar-instruction{max-width:min(84vw,520px);padding:12px 16px;border-radius:18px;background:rgba(0,0,0,.52);border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);font-size:18px;font-weight:700;line-height:1.35;text-shadow:0 1px 8px rgba(0,0,0,.45)}
+.ar-sub{margin-top:4px;font-size:12px;font-weight:500;color:rgba(255,255,255,.72)}
+.ar-bottom{position:absolute;left:16px;right:16px;bottom:calc(var(--safe-b) + 16px);display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ar-card{padding:11px 12px;border-radius:16px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.15);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.ar-card-l{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.58);margin-bottom:3px}
+.ar-card-v{font-size:15px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ar-panel{display:flex;gap:8px;align-items:center;padding:10px;background:var(--sf);border-top:1px solid var(--bd);flex-wrap:wrap}
+.ar-input{flex:1;min-width:180px;height:36px;border:1px solid var(--bd);border-radius:10px;background:var(--sf2);color:var(--tx);font-family:var(--font-u);font-size:13px;padding:0 12px;outline:none}
+.ar-input:focus{border-color:var(--ac);box-shadow:0 0 0 3px color-mix(in srgb,var(--ac) 15%,transparent)}
+.ar-mini{font-size:11px;color:var(--tx2);line-height:1.45;flex-basis:100%}
+
+/* ══════════════════════════════════════
    THEME SHEET
 ══════════════════════════════════════ */
 .overlay{
@@ -417,7 +466,22 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--tx);font-famil
 @media(max-width:800px){
   .side{position:fixed;left:0;top:0;bottom:0;z-index:200;transform:translateX(-100%);box-shadow:var(--sh-lg)}
   .side.on{transform:translateX(0)}
+  .toolbar{align-items:stretch}
+  .mode-tabs{width:100%;overflow-x:auto}
+  .mode-tabs::-webkit-scrollbar{display:none}
+  .mtab{flex:1;min-width:max-content}
   .txt-wrap{padding:22px 18px}
+  .ar-bottom{grid-template-columns:1fr;left:12px;right:12px}
+  .ar-top{top:12px;left:12px;right:12px}
+  .ar-instruction{font-size:16px}
+}
+@media(min-width:801px) and (max-width:1200px){
+  .ar-stage{border-radius:0 0 0 22px}
+}
+@media(orientation:landscape) and (max-height:560px){
+  .ar-route{top:46%}
+  .ar-bottom{grid-template-columns:repeat(3,minmax(120px,1fr));bottom:10px}
+  .ar-card{padding:8px 10px}
 }
 </style>
 </head>
@@ -509,6 +573,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--tx);font-famil
         <div class="mode-tabs">
           <button class="mtab act" id="tab-txt" onclick="setMode('txt')">✏️ 텍스트</button>
           <button class="mtab" id="tab-pen" onclick="setMode('pen')">🖊️ 필기</button>
+          <button class="mtab" id="tab-ar" onclick="setMode('ar')">🧭 AR 길안내</button>
         </div>
         <div class="tb-sep"></div>
 
@@ -530,6 +595,13 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--tx);font-famil
           <button class="tbtn" onclick="redo()" title="다시실행">↪</button>
           <div class="tb-sep"></div>
           <button class="tbtn del" onclick="clearAll()" title="전체 지우기">🗑</button>
+        </div>
+
+        <!-- AR tools -->
+        <div class="tb-grp" id="ar-tools" style="display:none">
+          <button class="tbtn" onclick="startAR()" title="카메라 시작">📷</button>
+          <button class="tbtn" onclick="centerAR()" title="경로 보정">◎</button>
+          <button class="tbtn" onclick="stopAR()" title="카메라 정지">■</button>
         </div>
 
         <div class="tb-spacer"></div>
@@ -602,6 +674,39 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--tx);font-famil
           <div class="tool-badge" id="badge">
             <div class="badge-dot"></div>
             <span id="badge-t">펜</span>
+          </div>
+        </div>
+
+        <!-- AR NAVIGATION MODE -->
+        <div class="ar-mode-wrap" id="ar-mode" style="display:none">
+          <div class="ar-stage">
+            <video class="ar-video" id="ar-video" autoplay playsinline muted></video>
+            <div class="ar-sim on" id="ar-sim"></div>
+            <div class="ar-gradient"></div>
+            <div class="ar-hud">
+              <div class="ar-top">
+                <div class="ar-pill"><span class="ar-live-dot"></span><span id="ar-status">AR 대기 중</span></div>
+                <div class="ar-pill ar-compass" id="ar-heading">000° N</div>
+              </div>
+              <div class="ar-route">
+                <div class="ar-arrow" id="ar-arrow">↑</div>
+                <div class="ar-instruction">
+                  <span id="ar-step">갤럭시 폴드7을 세우고 카메라를 시작하세요</span>
+                  <div class="ar-sub" id="ar-sub">후면 카메라 위에 목적지 방향과 거리 힌트를 겹쳐 보여줍니다</div>
+                </div>
+              </div>
+              <div class="ar-bottom">
+                <div class="ar-card"><div class="ar-card-l">목적지</div><div class="ar-card-v" id="ar-dest">서울역</div></div>
+                <div class="ar-card"><div class="ar-card-l">남은 거리</div><div class="ar-card-v" id="ar-distance">1.2 km</div></div>
+                <div class="ar-card"><div class="ar-card-l">다음 안내</div><div class="ar-card-v" id="ar-next">80 m 직진</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="ar-panel">
+            <input class="ar-input" id="ar-dest-input" value="서울역" placeholder="목적지 입력" oninput="updateARDestination(this.value)">
+            <button class="btn-new" onclick="startAR()" style="width:auto">📷 카메라 시작</button>
+            <button class="tbtn" onclick="centerAR()" title="방향 보정">◎</button>
+            <div class="ar-mini" id="ar-help">HTTPS 또는 localhost에서 카메라/위치 권한을 허용하면 실제 센서값을 사용합니다. 센서가 없으면 데모 경로로 표시됩니다.</div>
           </div>
         </div>
 
@@ -747,6 +852,7 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 function onGAPILoad() {
+  window.__pendingGAPILoad = false;
   gapi.load('client', async () => {
     await gapi.client.init({ discoveryDocs:['https://sheets.googleapis.com/$discovery/rest?version=v4'] });
     gapiReady = true;
@@ -755,6 +861,7 @@ function onGAPILoad() {
 }
 
 function onGISLoad() {
+  window.__pendingGISLoad = false;
   if (!CLIENT_ID) { gisReady = true; return; }
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: CLIENT_ID,
@@ -763,6 +870,8 @@ function onGISLoad() {
   });
   gisReady = true;
 }
+if (window.__pendingGAPILoad) onGAPILoad();
+if (window.__pendingGISLoad) onGISLoad();
 
 /* ════════════════════════════════════════
    AUTH
@@ -959,11 +1068,13 @@ function openNote(id) {
 function delNote() {
   if (!activeId) return;
   if (!confirm('이 노트를 삭제할까요?')) return;
+  stopAR();
   notes = notes.filter(n=>n.id!==activeId);
   activeId = null; _saveLocal(); renderList();
   document.getElementById('empty-big').style.display='flex';
   document.getElementById('txt-mode').style.display='none';
   document.getElementById('pen-mode').style.display='none';
+  document.getElementById('ar-mode').style.display='none';
   document.getElementById('toolbar').style.display='none';
   toast('삭제됨','🗑');
 }
@@ -1000,7 +1111,7 @@ function renderList(q) {
       <div class="ni-meta">
         <span>${_ago(n.ua)}</span>
         ${n.tags&&n.tags[0]?`<span class="ni-tag">${n.tags[0]}</span>`:''}
-        <span class="ni-mode">${n.lastMode==='pen'?'🖊':'✏️'}</span>
+        <span class="ni-mode">${n.lastMode==='ar'?'🧭':n.lastMode==='pen'?'🖊':'✏️'}</span>
       </div>
     </div>`).join('');
 }
@@ -1033,10 +1144,18 @@ function setMode(m, silent) {
   mode = m;
   document.getElementById('tab-txt').classList.toggle('act', m==='txt');
   document.getElementById('tab-pen').classList.toggle('act', m==='pen');
+  document.getElementById('tab-ar').classList.toggle('act', m==='ar');
   document.getElementById('txt-tools').style.display = m==='txt'?'flex':'none';
   document.getElementById('pen-tools').style.display = m==='pen'?'flex':'none';
+  document.getElementById('ar-tools').style.display  = m==='ar'?'flex':'none';
   document.getElementById('txt-mode').style.display  = m==='txt'?'flex':'none';
   document.getElementById('pen-mode').style.display  = m==='pen'?'flex':'none';
+  document.getElementById('ar-mode').style.display   = m==='ar'?'flex':'none';
+  if (m!=='ar') stopAR(true);
+  if (m==='ar') {
+    _initAR();
+    _renderAR();
+  }
   if (m==='pen') {
     requestAnimationFrame(()=>{
       _initCanvas();
@@ -1049,6 +1168,126 @@ function setMode(m, silent) {
 }
 
 function fmt(cmd) { document.execCommand(cmd); }
+
+/* ════════════════════════════════════════
+   GALAXY FOLD AR NAVIGATION
+════════════════════════════════════════ */
+const arState = {
+  stream:null, watchId:null, demoTimer:null, heading:0, bearing:35,
+  distance:1200, destination:'서울역', started:false
+};
+
+function _initAR() {
+  updateARDestination(document.getElementById('ar-dest-input').value || arState.destination);
+  _bindOrientation();
+  if (!arState.demoTimer) {
+    arState.demoTimer = setInterval(()=>{
+      if (!arState.started) arState.heading = (arState.heading + 3) % 360;
+      arState.distance = Math.max(65, arState.distance - 7);
+      _renderAR();
+    }, 900);
+  }
+}
+
+async function startAR() {
+  _initAR();
+  const video = document.getElementById('ar-video');
+  try {
+    if (!navigator.mediaDevices?.getUserMedia) throw new Error('camera-unavailable');
+    arState.stream = await navigator.mediaDevices.getUserMedia({
+      video:{ facingMode:{ ideal:'environment' }, width:{ ideal:2208 }, height:{ ideal:1840 } },
+      audio:false
+    });
+    video.srcObject = arState.stream;
+    video.classList.add('on');
+    arState.started = true;
+    _setARSim(false);
+    document.getElementById('ar-status').textContent = '카메라 AR 실행 중';
+    toast('AR 카메라가 시작되었습니다', '📷');
+  } catch(e) {
+    arState.started = false;
+    _setARSim(true);
+    document.getElementById('ar-status').textContent = '데모 AR 실행 중';
+    toast('카메라를 사용할 수 없어 데모 HUD로 표시합니다', 'ℹ️');
+  }
+  _startGeo();
+  _renderAR();
+}
+
+function stopAR(quiet) {
+  if (arState.stream) arState.stream.getTracks().forEach(t=>t.stop());
+  arState.stream = null;
+  if (arState.watchId !== null && navigator.geolocation) navigator.geolocation.clearWatch(arState.watchId);
+  arState.watchId = null;
+  arState.started = false;
+  const video = document.getElementById('ar-video');
+  if (video) { video.srcObject = null; video.classList.remove('on'); }
+  _setARSim(true);
+  const status = document.getElementById('ar-status');
+  if (status) status.textContent = 'AR 대기 중';
+  if (!quiet) toast('AR 카메라를 정지했습니다', '■');
+}
+
+function centerAR() {
+  arState.bearing = arState.heading;
+  arState.distance = Math.max(arState.distance, 320);
+  _renderAR();
+  toast('현재 방향으로 경로를 보정했습니다', '◎');
+}
+
+function updateARDestination(value) {
+  arState.destination = (value || '목적지').trim();
+  const dest = document.getElementById('ar-dest');
+  if (dest) dest.textContent = arState.destination;
+}
+
+function _bindOrientation() {
+  if (window.__arOrientationBound) return;
+  window.__arOrientationBound = true;
+  window.addEventListener('deviceorientationabsolute', _onOrientation, true);
+  window.addEventListener('deviceorientation', _onOrientation, true);
+}
+
+function _onOrientation(e) {
+  const h = e.webkitCompassHeading ?? (e.alpha !== null ? 360 - e.alpha : null);
+  if (typeof h === 'number' && Number.isFinite(h)) {
+    arState.heading = (h + 360) % 360;
+    _renderAR();
+  }
+}
+
+function _startGeo() {
+  if (!navigator.geolocation || arState.watchId !== null) return;
+  arState.watchId = navigator.geolocation.watchPosition(pos=>{
+    const speed = Math.max(1.2, pos.coords.speed || 1.6);
+    arState.distance = Math.max(45, arState.distance - speed * 4);
+    if (typeof pos.coords.heading === 'number' && !Number.isNaN(pos.coords.heading)) arState.heading = pos.coords.heading;
+    _renderAR();
+  }, ()=>{ document.getElementById('ar-help').textContent = '위치 권한이 없어 데모 거리와 방향으로 안내합니다.'; }, {
+    enableHighAccuracy:true, maximumAge:1000, timeout:5000
+  });
+}
+
+function _renderAR() {
+  const turn = ((arState.bearing - arState.heading + 540) % 360) - 180;
+  const absTurn = Math.abs(turn);
+  const arrow = document.getElementById('ar-arrow');
+  if (!arrow) return;
+  arrow.style.transform = `rotate(${turn}deg)`;
+  document.getElementById('ar-heading').textContent = `${String(Math.round(arState.heading)).padStart(3,'0')}° ${_cardinal(arState.heading)}`;
+  document.getElementById('ar-distance').textContent = arState.distance >= 1000 ? (arState.distance/1000).toFixed(1)+' km' : Math.round(arState.distance)+' m';
+  document.getElementById('ar-step').textContent = absTurn < 12 ? `${arState.destination} 방향으로 직진` : `${Math.round(absTurn)}° ${turn > 0 ? '오른쪽' : '왼쪽'}으로 회전`;
+  document.getElementById('ar-next').textContent = arState.distance < 120 ? '곧 도착' : `${Math.min(160, Math.round(arState.distance/5)*5)} m 직진`;
+  document.getElementById('ar-sub').textContent = arState.started ? '카메라 화면 위에 실시간 방향 HUD를 표시 중입니다' : '센서가 없으면 데모 경로가 자동으로 움직입니다';
+}
+
+function _setARSim(on) {
+  document.getElementById('ar-sim')?.classList.toggle('on', on);
+}
+
+function _cardinal(deg) {
+  return ['N','NE','E','SE','S','SW','W','NW'][Math.round(deg/45)%8];
+}
 
 /* ════════════════════════════════════════
    ★  APPLE PENCIL ENGINE — optimized
@@ -1407,6 +1646,8 @@ document.addEventListener('touchmove', e=>{
 /* Restore theme & canvas style on page load */
 window.addEventListener('load', ()=>{
   _applyThemeCSS(theme); _updateThemeCards(); _updateCSBtns();
+  if (window.__pendingGAPILoad) onGAPILoad();
+  if (window.__pendingGISLoad) onGISLoad();
 });
 </script>
 </body>
